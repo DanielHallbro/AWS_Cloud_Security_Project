@@ -6,16 +6,17 @@
 
 [![Type](https://img.shields.io/badge/Type-Cloud_Security_Analysis-980000)](https://github.com/DanielHallbro/AWS_Cloud_Security_Project)
 [![Cloud](https://img.shields.io/badge/Cloud-AWS-FF9900?logo=amazonaws)](https://aws.amazon.com/)
+[![IaC](https://img.shields.io/badge/IaC-Terraform-7B42BC?logo=terraform)](https://www.terraform.io/)
 [![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Status](https://img.shields.io/badge/Status-Submitted-success)](https://github.com/DanielHallbro/AWS_Cloud_Security_Project)
-[![School](https://img.shields.io/badge/School-Frans_Schartau-blue)](https://www.frans-schartau.se/)
+[![School](https://img.shields.io/badge/School-Frans_Schartau-blue)](https://www.franz-schartau.se/)
 
 **Author:** Daniel Hållbro (Student)
 **School:** Frans Schartaus Handelsinstitut
 **Course:** Cloud and Virtual Service Security (30P)
 **Year:** 2026
 
-### 📄 [Download Report (PDF)](https://github.com/DanielHallbro/AWS_Cloud_Security_Project/releases/latest/download/CloudCorp_Report.pdf) | 📊 [Download Appendix A (PDF)](https://github.com/DanielHallbro/AWS_Cloud_Security_Project/releases/latest/download/CloudCorp_Appendix_A.pdf) | 🎤 [Download Presentation (PDF)](https://github.com/DanielHallbro/AWS_Cloud_Security_Project/releases/latest/download/CloudCorp_Presentation.pdf)
+### [Download Report (PDF)](https://github.com/DanielHallbro/AWS_Cloud_Security_Project/releases/latest/download/CloudCorp_Report.pdf) |  [Download Appendix A (PDF)](https://github.com/DanielHallbro/AWS_Cloud_Security_Project/releases/latest/download/CloudCorp_Appendix_A.pdf) |  [Download Presentation (PDF)](https://github.com/DanielHallbro/AWS_Cloud_Security_Project/releases/latest/download/CloudCorp_Presentation.pdf)
 
 *(Direct download links via GitHub Releases)*
 
@@ -33,7 +34,7 @@ The work is published here in the spirit of transparency and as part of a public
 - [The Scenario](#the-scenario)
 - [Deliverables](#deliverables)
 - [Repository Structure](#repository-structure)
-- [What's Next](#whats-next)
+- [Terraform](#terraform)
 - [Disclaimer](#disclaimer)
 
 ---
@@ -135,6 +136,23 @@ AWS_Cloud_Security_Project/
 │   ├── CloudCorp_Report.pdf           <-- Main report
 │   ├── CloudCorp_Appendix_A.pdf       <-- Appendix A
 │   └── CloudCorp_Presentation.pdf     <-- Slides
+├── terraform/                         <-- Infrastructure as Code
+│   ├── vpc.tf                         <-- VPC, subnets, IGW, NAT, route tables, S3 endpoint
+│   ├── security_groups.tf             <-- ALB → EC2 → RDS security group chain
+│   ├── kms.tf                         <-- Customer-managed KMS keys (Stockholm + Frankfurt)
+│   ├── s3.tf                          <-- Data, static-assets, and CRR buckets
+│   ├── iam.tf                         <-- Roles, policies, and KMS grants
+│   ├── rds.tf                         <-- MySQL instance and subnet group
+│   ├── alb.tf                         <-- Launch template, ALB, target group, ASG
+│   ├── waf.tf                         <-- WAF Web ACL with managed rule groups
+│   ├── cloudfront.tf                  <-- CloudFront distribution and OAC
+│   ├── observability.tf               <-- CloudTrail, CloudWatch alarms, SNS
+│   ├── providers.tf                   <-- AWS providers (eu-north-1, eu-central-1, us-east-1)
+│   ├── versions.tf                    <-- Terraform and provider version constraints
+│   ├── variables.tf                   <-- Input variable definitions
+│   ├── locals.tf                      <-- Computed locals (bucket names, AZs)
+│   ├── terraform.tfvars.example       <-- Variable template (copy to terraform.tfvars)
+│   └── .terraform.lock.hcl           <-- Provider version lock file
 ├── assets/
 │   └── banner.png                     <-- README banner
 ├── LICENSE                            <-- MIT license
@@ -145,11 +163,39 @@ AWS_Cloud_Security_Project/
 
 ---
 
-## What's Next
+## Terraform
 
-The architecture in this project was provisioned manually in the AWS Console (ClickOps). One of the conclusions in the report's reflection is that this is exactly the kind of process that produces the misconfigurations a security architecture is supposed to prevent.
+The architecture initially built via ClickOps in the AWS Console has been fully translated into Terraform. The IaC implementation uses a flat file structure — one `.tf` file per architectural component — with three AWS provider aliases covering the three regions the architecture spans: `eu-north-1` (Stockholm, primary), `eu-central-1` (Frankfurt, CRR destination), and `us-east-1` (CloudFront and WAF).
 
-A natural follow-up — translating the architecture into **Infrastructure as Code (Terraform)** — is planned and will be added to this repository when complete. It will let the entire environment be reviewed in a pull request, version-controlled, and rebuilt deterministically in any region. Once the IaC foundation is in place, **Compliance as Code** becomes a natural extension: automated policy checks (using tools like tfsec, Checkov, or Open Policy Agent) can run on every pull request to catch misconfigurations *before* they reach production — closing the loop on the original incident's root cause.
+### Prerequisites
+
+- Terraform >= 1.5.0
+- AWS CLI configured with a profile that has sufficient permissions
+- An AWS account (free tier is sufficient for most components; some demo limitations apply — see below)
+
+### Usage
+
+```bash
+cd terraform
+cp terraform.tfvars.example terraform.tfvars
+# Edit terraform.tfvars with your AWS profile, account ID, and a db_password
+terraform init
+terraform plan
+terraform apply
+```
+
+### Demo vs production differences
+
+A few components are intentionally scaled down from the production spec documented in the report, due to AWS free tier limitations:
+
+| Component | Demo (this code) | Production spec |
+| --- | --- | --- |
+| EC2 instance type | t3.micro | t3.medium |
+| RDS instance | db.t3.micro, Single-AZ | db.t3.small, Multi-AZ |
+| RDS backup retention | 1 day | 14 days |
+| GuardDuty | Not in Terraform (free tier restriction) | Enabled with S3 + malware protection |
+
+GuardDuty can be enabled manually in the AWS Console at no cost for the first 30 days. The Terraform resource is documented but commented out in `observability.tf`.
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
@@ -157,9 +203,9 @@ A natural follow-up — translating the architecture into **Infrastructure as Co
 
 ## Disclaimer
 
-This repository is published for educational and portfolio purposes. The architecture, configurations, and (planned) Infrastructure as Code in this project were developed as part of an academic course assignment based on a fictional scenario.
+This repository is published for educational and portfolio purposes. The architecture, configurations, and Infrastructure as Code in this project were developed as part of an academic course assignment based on a fictional scenario.
 
-**The IaC code (when published) is not intended for use in production environments without significant adaptation.** Real production deployments require additional considerations not covered here — including but not limited to: secrets management, CI/CD integration, organisational policies, compliance frameworks specific to the deploying organisation, threat modelling of the actual application, and operational runbooks.
+**This IaC code is not intended for use in production environments without significant adaptation.** Real production deployments require additional considerations not covered here — including but not limited to: secrets management, CI/CD integration, organisational policies, compliance frameworks specific to the deploying organisation, threat modelling of the actual application, and operational runbooks.
 
 Cost figures reflect AWS Pricing Calculator estimates (April 2026, Europe region) for a specific traffic model documented in Appendix A. Actual costs will vary with usage patterns, region, and AWS pricing changes.
 

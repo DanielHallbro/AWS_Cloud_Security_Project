@@ -1,0 +1,41 @@
+# .terraform directory holds downloaded provider binaries and module caches.
+# Always machine-generated; never commit.
+.terraform/
+.terraform.lock.hcl.backup
+
+# State files contain the full resource graph including any sensitive
+# attributes (RDS endpoints, secret ARNs, KMS key material references).
+# Never commit state to a public repo — even sanitised state can leak
+# resource ARNs that attackers can use for reconnaissance.
+*.tfstate
+*.tfstate.*
+*.tfstate.backup
+*.backup
+
+# Plan output. Can contain sensitive values, and is environment-specific.
+*.plan
+*.tfplan
+*.tfplan.binary
+
+# tfvars contains secrets (db_password etc) — never commit.
+# Use terraform.tfvars.example as a template instead.
+terraform.tfvars
+
+# Per-developer override files. These exist so a developer can change
+# behaviour locally without modifying tracked files.
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+
+# Auto-loaded tfvars are environment-specific.
+*.auto.tfvars
+
+# CLI logs
+crash.log
+crash.*.log
+
+# Editor / OS noise
+.vscode/
+.idea/
+.DS_Store

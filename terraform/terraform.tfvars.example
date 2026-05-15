@@ -1,0 +1,4 @@
+aws_profile    = "YOUR_AWS_PROFILE"
+aws_account_id = "YOUR_ACCOUNT_ID"
+project_name   = "CloudCorp"
+db_password    = "REPLACE_ME"
